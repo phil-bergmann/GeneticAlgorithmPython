@@ -41,6 +41,7 @@ class GA:
                  on_crossover=None,
                  on_mutation=None,
                  callback_generation=None,
+                 before_fitness=None,
                  on_generation=None,
                  on_stop=None,
                  delay_after_gen=0.0,
@@ -656,6 +657,22 @@ class GA:
         else:
             self.on_start = None
 
+        # Check if the on_start exists.
+        if not (before_fitness is None):
+            # Check if the on_start is a function.
+            if callable(before_fitness):
+                # Check if the on_start function accepts only a single paramater.
+                if (before_fitness.__code__.co_argcount == 1):
+                    self.before_fitness = before_fitness
+                else:
+                    self.valid_parameters = False
+                    raise ValueError("The function assigned to the on_start parameter must accept only 1 parameter representing the instance of the genetic algorithm.\nThe passed function named '{funcname}' accepts {argcount} parameter(s).".format(funcname=before_fitness.__code__.co_name, argcount=before_fitness.__code__.co_argcount))
+            else:
+                self.valid_parameters = False
+                raise ValueError("The value assigned to the on_start parameter is expected to be of type function but ({on_start_type}) found.".format(on_start_type=type(before_fitness)))
+        else:
+            self.before_fitness = None
+
         # Check if the on_fitness exists.
         if not (on_fitness is None):
             # Check if the on_fitness is a function.
@@ -1265,6 +1282,8 @@ class GA:
 
             self.previous_generation_fitness = self.last_generation_fitness.copy()
             # Measuring the fitness of each chromosome in the population. Save the fitness in the last_generation_fitness attribute.
+            if not (self.before_fitness is None):
+                self.before_fitness(self)
             self.last_generation_fitness = self.cal_pop_fitness()
 
             best_solution, best_solution_fitness, best_match_idx = self.best_solution(pop_fitness=self.last_generation_fitness)
